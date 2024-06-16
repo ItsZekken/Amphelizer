@@ -149,7 +149,7 @@ def main():
             x=significant_corr,
             y=significant_corr.index,
             orientation='h',
-            marker=dict(color=significant_corr.apply(lambda x: 'green' if x > 0 else 'red'))
+            marker=dict(color=significant_corr.apply(lambda x: '#f0e68c' if x > 0 else '#54382a'))
         ))
         fig_corr_bars.update_layout(
             template='plotly_dark',
