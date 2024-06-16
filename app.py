@@ -5,7 +5,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from textblob import TextBlob
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
 def calculate_mean_score(scores):
@@ -40,7 +40,7 @@ def main():
         st.subheader("Gráfico de Puntajes y Promedio Móvil")
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=main_df['date'], y=main_df['score'], mode='lines', name='Puntaje Diario', line=dict(color='#736836', width=1)))
-        fig.add_trace(go.Scatter(x=main_df['date'], y=main_df['rolling_avg_score'], mode='lines', name='Promedio Móvil (10 días)', line=dict(color='goldenrod', width=3)))
+        fig.add_trace(go.Scatter(x=main_df['date'], y=main_df['rolling_avg_score'], mode='lines', name='Promedio Móvil (10 días)', line=dict(color='khaki', width=3)))
         fig.update_layout(template='plotly_dark', title='Puntaje Diario y Promedio Móvil', xaxis_title='Fecha', yaxis_title='Puntaje', legend_title='Leyenda')
         st.plotly_chart(fig, use_container_width=True)
 
@@ -98,33 +98,6 @@ def main():
         fig_corr.update_layout(coloraxis_colorscale='Viridis', template='plotly_dark')
         st.plotly_chart(fig_corr, use_container_width=True)
 
-        # Sentimiento de las notas
-        st.subheader("Sentimiento de las Notas Diarias")
-        fig_sentiment = go.Figure()
-
-        # Promedio móvil del sentimiento (línea khaki)
-        main_df['rolling_avg_sentiment'] = main_df['sentiment'].rolling(window=10, min_periods=1).mean()
-        fig_sentiment.add_trace(go.Scatter(
-            x=main_df['date'], y=main_df['rolling_avg_sentiment'],
-            mode='lines',
-            name='Promedio Móvil (10 días)',
-            line=dict(color='khaki')
-        ))
-
-        # Actualizar layout del gráfico de sentimiento
-        fig_sentiment.update_layout(
-            template='plotly_dark',
-            title='Sentimiento suavizado de las Notas Diarias',
-            xaxis_title='Fecha',
-            yaxis_title='Sentimiento',
-            legend_title='Leyenda',
-            hovermode='x unified'
-        )
-
-        # Mostrar el gráfico de sentimiento en Streamlit
-        fig_sentiment.update_traces(marker_color='khaki')  # Cambia el color de las líneas del gráfico de sentimiento a 'khaki'
-        st.plotly_chart(fig_sentiment, use_container_width=True)
-
         # Correlaciones más importantes entre actividades y emociones
         st.subheader("Correlaciones entre Actividades y Emociones")
         
@@ -152,7 +125,7 @@ def main():
         selected_corr = activity_emotion_corr.loc[selected_activity]
 
         # Calcular umbral para seleccionar las correlaciones más altas (positivas y negativas)
-        threshold = selected_corr.abs().quantile(0.75)  # Usando el percentil 75 como umbral
+        threshold = selected_corr.abs().quantile(0.6)  # Usando el percentil 75 como umbral
         significant_corr = selected_corr[(selected_corr.abs() >= threshold)].sort_values()
 
         # Gráfico de barras de las correlaciones
@@ -177,27 +150,29 @@ def main():
         st.subheader("Modelo Predictivo para Puntaje de Estado de Ánimo")
         
         # Preparar datos para el modelo
-        X = combined_tags_df.drop(columns=['date', 'score', 'notes', 'sentiment'])
-        y = combined_tags_df['score']
+        X = combined_tags_df.drop(columns=['date', 'score', 'notes', 'sentiment', 'rolling_avg_score'])
+        y = combined_tags_df['rolling_avg_score']
 
         # Dividir los datos en conjunto de entrenamiento y prueba
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         # Crear y entrenar el modelo de regresión lineal
-        model = LinearRegression()
+        model = RandomForestRegressor(n_estimators=100, random_state=42)
         model.fit(X_train, y_train)
 
         # Realizar predicciones
         y_pred = model.predict(X_test)
 
         # Evaluar el modelo
+        r2 = model.score(X_test, y_test)
         mse = mean_squared_error(y_test, y_pred)
+        st.write(f"R2 del modelo: {r2:.2f}")
         st.write(f"Mean Squared Error del modelo: {mse:.2f}")
 
         # Visualizar predicciones vs valores reales
         results_df = pd.DataFrame({'Actual': y_test, 'Predicted': y_pred})
         fig_pred = px.scatter(results_df, x='Actual', y='Predicted', title='Predicciones vs Valores Reales')
-        fig_pred.add_trace(go.Scatter(x=[0, 5], y=[0, 5], mode='lines', line=dict(color='red', dash='dash')))
+        fig_pred.add_trace(go.Scatter(x=[0, 5], y=[0, 5], mode='lines', line=dict(color='#f0e68c', dash='dash')))
         fig_pred.update_layout(template='plotly_dark', xaxis_title='Valores Reales', yaxis_title='Predicciones')
         st.plotly_chart(fig_pred, use_container_width=True)
 
