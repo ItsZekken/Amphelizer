@@ -129,7 +129,7 @@ def main():
         st.subheader("Modelo Predictivo para Puntaje de Estado de Ánimo")
         
         # Preparar datos para el modelo
-        X = combined_tags_df.drop(columns=['date', 'score', 'notes', 'rolling_avg_score', 'sentiment', 'rolling_avg_sentiment'])
+        X = combined_tags_df.drop(columns=['date', 'score', 'notes', 'rolling_avg_score', 'sentiment'])
         y = combined_tags_df['score']
 
         # Dividir los datos en conjunto de entrenamiento y prueba
