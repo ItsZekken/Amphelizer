@@ -104,18 +104,6 @@ def main():
         fig_corr.update_layout(coloraxis_colorscale='Viridis', template='plotly_dark')
         st.plotly_chart(fig_corr, use_container_width=True)
 
-        # Correlaciones más importantes entre actividades y emociones
-        st.subheader("Correlaciones entre Actividades y Emociones")
-        activities_df = tags_exploded[tags_exploded['tags'].apply(lambda x: x['type'] if isinstance(x, dict) else None).isin(category_mapping['Actividades'])]
-        emotions_df = tags_exploded[tags_exploded['tags'].apply(lambda x: x['type'] if isinstance(x, dict) else None).isin(category_mapping['Emociones'])]
-        activities_df['activity_flag'] = 1
-        emotions_df['emotion_flag'] = 1
-        pivot_activities_df = activities_df.pivot_table(index='date', columns='tag_entries', values='activity_flag', fill_value=0)
-        pivot_emotions_df = emotions_df.pivot_table(index='date', columns='tag_entries', values='emotion_flag', fill_value=0)
-        combined_activities_emotions_df = pd.merge(pivot_activities_df, pivot_emotions_df, on='date', how='left').fillna(0)
-        corr_activities_emotions = combined_activities_emotions_df.corr()
-        activity_emotion_corr = corr_activities_emotions.loc[pivot_activities_df.columns, pivot_emotions_df.columns]
-
         # GRAFICO INTERACTIVO DE CORRELACIONES SEGÚN TAG
         st.subheader("Gráfico Interactivo de Correlaciones")
         selected_category_1 = st.selectbox("Categoría 1", tag_categories, key="first_category", index=1)
@@ -155,25 +143,6 @@ def main():
                 st.write(f"No hay correlaciones significativas para {selected_tag_1} con Tags de {selected_category_2}.")
         else:
             st.write(f"No se encontraron datos de correlación para los tags seleccionados.")
-
-        # GRÁFICO DEL MODELO
-        st.subheader("Modelo Predictivo para Puntaje de Estado de Ánimo")
-        X = combined_tags_df.drop(columns=['date', 'score', 'notes', 'rolling_avg_score'])
-        y = combined_tags_df['rolling_avg_score']
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        model = RandomForestRegressor(n_estimators=100, random_state=42)
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
-        r2 = model.score(X_test, y_test)
-        mse = mean_squared_error(y_test, y_pred)
-        st.write(f"R2 del modelo: {r2:.2f}")
-        st.write(f"Mean Squared Error del modelo: {mse:.2f}")
-
-        results_df = pd.DataFrame({'Actual': y_test, 'Predicted': y_pred})
-        fig_pred = px.scatter(results_df, x='Actual', y='Predicted', title='Predicciones vs Valores Reales')
-        fig_pred.add_trace(go.Scatter(x=[0, 5], y=[0, 5], mode='lines', line=dict(color='#f0e68c', dash='dash')))
-        fig_pred.update_layout(template='plotly_dark', xaxis_title='Valores Reales', yaxis_title='Predicciones')
-        st.plotly_chart(fig_pred, use_container_width=True)
 
 if __name__ == "__main__":
     main()
