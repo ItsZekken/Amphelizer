@@ -14,7 +14,6 @@ def main():
     st.title("Análisis de Datos de Pixels")
 
     uploaded_file = st.file_uploader("Sube un archivo JSON", type="json")
-    api_key = "AIzaSyBeRubHVgurpgUP-PMkW56St_rweW02tqQ"
 
     if uploaded_file is not None:
         data = json.load(uploaded_file)
